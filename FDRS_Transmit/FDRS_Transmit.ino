@@ -16,6 +16,18 @@
 // #define LORA_BUSY 13
 // #define USE_SX126X
 
+// #define RADIOLIB_MODULE SX1262  // T3S3
+// #define USE_SX126X
+// #define LORA_SS 7
+// #define LORA_RST 8
+// #define LORA_DIO 33
+// #define LORA_BUSY 34
+// #define CUSTOM_SPI
+// #define LORA_SPI_SCK 5
+// #define LORA_SPI_MISO 3
+// #define LORA_SPI_MOSI 6
+
+
 #define RADIOLIB_MODULE SX1276  // ESP32 SX1276 (TTGO LoRa32 V1)
 #define LORA_SS 18
 #define LORA_RST 14
@@ -63,8 +75,9 @@ void setup() {
 #endif  //ARDUINO_ARCH_RP2040
 #endif  // CUSTOM_SPI
 
+
 #ifdef USE_SX126X
-  int state = radio.begin(FDRS_LORA_FREQUENCY, FDRS_LORA_BANDWIDTH, FDRS_LORA_SF, FDRS_LORA_CR, FDRS_LORA_SYNCWORD, FDRS_LORA_TXPWR, 8, 1.6, false);
+  int state = radio.begin(FDRS_LORA_FREQUENCY, FDRS_LORA_BANDWIDTH, FDRS_LORA_SF, FDRS_LORA_CR, FDRS_LORA_SYNCWORD, FDRS_LORA_TXPWR);
 #else
   int state = radio.begin(FDRS_LORA_FREQUENCY, FDRS_LORA_BANDWIDTH, FDRS_LORA_SF, FDRS_LORA_CR, FDRS_LORA_SYNCWORD, FDRS_LORA_TXPWR, 8, 0);
 #endif
@@ -74,6 +87,7 @@ void setup() {
   } else {
     Serial.println("RadioLib initialization failed, code " + String(state));
   }
+  radio.setCRC(false);
 
 
 }

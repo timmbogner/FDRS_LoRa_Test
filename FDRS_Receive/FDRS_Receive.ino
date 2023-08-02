@@ -16,15 +16,21 @@
 // #define LORA_BUSY 13
 // #define USE_SX126X
 
-#define RADIOLIB_MODULE SX1276  // ESP32 SX1276 (TTGO LoRa32 V1)
-#define LORA_SS 18
-#define LORA_RST 14
-#define LORA_DIO 26
-#define LORA_BUSY RADIOLIB_NC
+// #define RADIOLIB_MODULE SX1276  // ESP32 SX1276 (TTGO LoRa32 V1)
+// #define LORA_SS 18
+// #define LORA_RST 14
+// #define LORA_DIO 26
+// #define LORA_BUSY RADIOLIB_NC
 
-#define FDRS_LORA_TXPWR 17
+#define RADIOLIB_MODULE SX1278  // ESP8266 SX1278
+#define LORA_SS    15
+#define LORA_RST   4
+#define LORA_DIO   5
+#define LORA_BUSY  RADIOLIB_NC
+//#define USE_SX126X
 
-#define FDRS_LORA_FREQUENCY 915.0
+#define FDRS_LORA_TXPWR 17   // LoRa TX power in dBm (: +2dBm - +17dBm (for SX1276-7) +20dBm (for SX1278))
+#define FDRS_LORA_FREQUENCY 433.0
 #define FDRS_LORA_BANDWIDTH 125.0
 #define FDRS_LORA_SF 7
 #define FDRS_LORA_CR 5
@@ -36,9 +42,9 @@
 #ifdef ESP32
 //SPIClass SPI(HSPI);
 #endif  // ESP32
-RADIOLIB_MODULE radio = new Module(LORA_SS, LORA_DIO, LORA_RST, -1, SPI);
+RADIOLIB_MODULE radio = new Module(LORA_SS, LORA_DIO, LORA_RST, LORA_BUSY, SPI);
 #else
-RADIOLIB_MODULE radio = new Module(LORA_SS, LORA_DIO, LORA_RST, -1);
+RADIOLIB_MODULE radio = new Module(LORA_SS, LORA_DIO, LORA_RST, LORA_BUSY);
 #endif  // CUSTOM_SPI
 
 void printLoraPacket(uint8_t *p, int size)
@@ -53,9 +59,18 @@ void printLoraPacket(uint8_t *p, int size)
   printf("\n");
 }
 
+// flag to indicate that a packet was received
+volatile bool receivedFlag = false;
+
+#if defined(ESP8266) || defined(ESP32)
+ICACHE_RAM_ATTR
+#endif
+void setFlag(void) {
+  receivedFlag = true;
+}
+
 void setup() {
   Serial.begin(115200);
-    delay(5000);
   Serial.println("Hello, world!");
 
 
@@ -72,7 +87,7 @@ void setup() {
 #endif  // CUSTOM_SPI
 
 #ifdef USE_SX126X
-  int state = radio.begin(FDRS_LORA_FREQUENCY, FDRS_LORA_BANDWIDTH, FDRS_LORA_SF, FDRS_LORA_CR, FDRS_LORA_SYNCWORD, FDRS_LORA_TXPWR, 8, 1.6, false);
+  int state = radio.begin(FDRS_LORA_FREQUENCY, FDRS_LORA_BANDWIDTH, FDRS_LORA_SF, FDRS_LORA_CR, FDRS_LORA_SYNCWORD, FDRS_LORA_TXPWR);
 #else
   int state = radio.begin(FDRS_LORA_FREQUENCY, FDRS_LORA_BANDWIDTH, FDRS_LORA_SF, FDRS_LORA_CR, FDRS_LORA_SYNCWORD, FDRS_LORA_TXPWR, 8, 0);
 #endif
@@ -85,8 +100,9 @@ void setup() {
 #ifdef USE_SX126X
   radio.setDio1Action(setFlag);
 #else
-  radio.setDio0Action(setFlag);
+  radio.setDio0Action(setFlag, RISING);
 #endif
+  radio.setCRC(false);
 
   // start listening for LoRa packets
   Serial.print(F("[SX1278] Starting to listen ... "));
@@ -99,16 +115,6 @@ void setup() {
     while (true)
       ;
   }
-}
-
-// flag to indicate that a packet was received
-volatile bool receivedFlag = false;
-
-#if defined(ESP8266) || defined(ESP32)
-ICACHE_RAM_ATTR
-#endif
-void setFlag(void) {
-  receivedFlag = true;
 }
 
 
@@ -160,6 +166,6 @@ void loop() {
     }
 
     // put module back to listen mode
-    radio.startReceive();
+    //radio.startReceive();
   }
 }
